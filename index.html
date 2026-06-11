@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a1628">
+<title>Hydra — Rappels d'eau</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #06111f;
+    --surface: #0d1f35;
+    --surface2: #112645;
+    --accent: #00b4ff;
+    --accent2: #005eff;
+    --text: #e8f4ff;
+    --muted: #5a7a99;
+    --danger: #ff4757;
+    --success: #2ed573;
+    --glass: rgba(13, 31, 53, 0.7);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% -10%, rgba(0,90,255,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 110%, rgba(0,180,255,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text); }
+
+  #notif-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+    transition: all 0.3s;
+  }
+  #notif-badge.on { color: var(--success); border-color: var(--success); background: rgba(46,213,115,0.08); }
+  #notif-badge.off { color: var(--danger); border-color: var(--danger); background: rgba(255,71,87,0.08); }
+
+  .drop-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 36px;
+  }
+
+  .drop-wrap {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin-bottom: 16px;
+  }
+
+  .drop-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 20px rgba(0,180,255,0.4));
+    animation: float 4s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .drop-progress-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .drop-percent {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .drop-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  .daily-count {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--muted);
+  }
+  .daily-count strong { color: var(--accent); font-size: 20px; }
+
+  .card {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0,180,255,0.12);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .interval-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .interval-btn {
+    background: var(--surface);
+    border: 1px solid rgba(0,180,255,0.15);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 10px 4px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .interval-btn:hover { border-color: var(--accent); color: var(--text); }
+  .interval-btn.active { background: rgba(0,180,255,0.12); border-color: var(--accent); color: var(--accent); }
+
+  .goal-row { display: flex; align-items: center; gap: 12px; }
+
+  .goal-btn {
+    width: 36px; height: 36px;
+    background: var(--surface);
+    border: 1px solid rgba(0,180,255,0.15);
+    border-radius: 8px;
+    color: var(--accent);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .goal-btn:hover { background: rgba(0,180,255,0.1); }
+
+  .goal-value {
+    flex: 1;
+    text-align: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .goal-unit { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+  .hours-row { display: flex; align-items: center; gap: 12px; }
+
+  .time-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid rgba(0,180,255,0.15);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 10px 12px;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .time-input:focus { border-color: var(--accent); }
+  .time-sep { color: var(--muted); font-size: 18px; font-weight: 300; }
+
+  .countdown-wrap { text-align: center; }
+
+  .countdown-time {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -2px;
+    color: var(--text);
+    line-height: 1;
+  }
+  .countdown-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .next-time { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .next-time strong { color: var(--accent); }
+
+  .log-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 16px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: all 0.2s;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0,90,255,0.3);
+  }
+  .log-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,90,255,0.4); }
+  .log-btn:active { transform: translateY(0); }
+
+  .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+
+  .start-btn, .stop-btn {
+    border: none;
+    border-radius: 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .start-btn { background: rgba(46,213,115,0.12); border: 1px solid rgba(46,213,115,0.3); color: var(--success); }
+  .start-btn:hover { background: rgba(46,213,115,0.2); }
+  .stop-btn { background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.25); color: var(--danger); }
+  .stop-btn:hover { background: rgba(255,71,87,0.18); }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+  .history-list::-webkit-scrollbar { width: 3px; }
+  .history-list::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 2px; }
+
+  .history-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+  .history-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .history-item time { color: var(--text); font-weight: 500; }
+
+  .empty-state { text-align: center; color: var(--muted); font-size: 13px; padding: 12px 0; }
+
+  .sw-banner {
+    background: rgba(0,180,255,0.07);
+    border: 1px solid rgba(0,180,255,0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .sw-banner.active { color: var(--success); border-color: rgba(46,213,115,0.25); background: rgba(46,213,115,0.05); }
+
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: var(--surface2);
+    border: 1px solid rgba(0,180,255,0.2);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    z-index: 100;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+    max-width: 90vw;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 rgba(0,180,255,0.4); }
+    70% { box-shadow: 0 0 0 20px rgba(0,180,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(0,180,255,0); }
+  }
+  .pulse { animation: pulse-ring 1s ease-out 3; }
+
+  @media (prefers-reduced-motion: reduce) { .drop-svg { animation: none; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="logo">Hydr<span>a</span></div>
+    <div id="notif-badge" class="off">Notifications OFF</div>
+  </header>
+
+  <div id="sw-banner" class="sw-banner">⏳ Chargement du service worker…</div>
+
+  <div class="drop-hero">
+    <div class="drop-wrap">
+      <svg class="drop-svg" viewBox="0 0 160 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <clipPath id="dropClip">
+            <path d="M80 10 C80 10 20 80 20 115 C20 148 47 165 80 165 C113 165 140 148 140 115 C140 80 80 10 80 10Z"/>
+          </clipPath>
+          <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#00b4ff" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#005eff" stop-opacity="1"/>
+          </linearGradient>
+          <linearGradient id="dropOutline" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#00b4ff" stop-opacity="0.5"/>
+            <stop offset="100%" stop-color="#005eff" stop-opacity="0.8"/>
+          </linearGradient>
+        </defs>
+        <path d="M80 10 C80 10 20 80 20 115 C20 148 47 165 80 165 C113 165 140 148 140 115 C140 80 80 10 80 10Z"
+          fill="rgba(0,100,200,0.08)"
+          stroke="url(#dropOutline)"
+          stroke-width="1.5"/>
+        <g clip-path="url(#dropClip)">
+          <rect id="water-rect" x="0" y="165" width="160" height="165" fill="url(#waterGrad)" opacity="0.85"/>
+          <path id="wave-path"
+            d="M-40 165 Q0 160 40 165 Q80 170 120 165 Q160 160 200 165 L200 330 L-40 330 Z"
+            fill="url(#waterGrad)" opacity="0.6"/>
+        </g>
+        <ellipse cx="65" cy="80" rx="8" ry="14" fill="white" opacity="0.12" transform="rotate(-20 65 80)"/>
+      </svg>
+      <div class="drop-progress-text">
+        <div class="drop-percent" id="drop-percent">0%</div>
+        <div class="drop-label">hydratation</div>
+      </div>
+    </div>
+    <div class="daily-count">
+      <strong id="intake-count">0</strong> / <span id="goal-display">8</span> verres aujourd'hui
+    </div>
+  </div>
+
+  <div class="card" id="countdown-card">
+    <div class="card-title">Prochain rappel</div>
+    <div class="countdown-wrap">
+      <div class="countdown-time" id="countdown">--:--</div>
+      <div class="countdown-sub" id="countdown-sub">Démarre les rappels pour commencer</div>
+      <div class="next-time" id="next-time-display" style="display:none">Rappel à <strong id="next-time">--</strong></div>
+    </div>
+  </div>
+
+  <button class="log-btn" id="log-btn" onclick="logWater()">💧 J'ai bu un verre</button>
+
+  <div class="control-row">
+    <button class="start-btn" onclick="startReminders()">▶ Démarrer</button>
+    <button class="stop-btn" onclick="stopReminders()">■ Arrêter</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Fréquence des rappels</div>
+    <div class="interval-grid">
+      <div class="interval-btn" data-min="30" onclick="setInterval_(30)">30 min</div>
+      <div class="interval-btn active" data-min="60" onclick="setInterval_(60)">1 h</div>
+      <div class="interval-btn" data-min="90" onclick="setInterval_(90)">1h30</div>
+      <div class="interval-btn" data-min="120" onclick="setInterval_(120)">2 h</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Objectif journalier</div>
+    <div class="goal-row">
+      <button class="goal-btn" onclick="changeGoal(-1)">−</button>
+      <div class="goal-value" id="goal-val">8 <span class="goal-unit">verres</span></div>
+      <button class="goal-btn" onclick="changeGoal(+1)">+</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Plage horaire active</div>
+    <div class="hours-row">
+      <input type="time" class="time-input" id="start-hour" value="07:00" onchange="saveSettings()">
+      <span class="time-sep">→</span>
+      <input type="time" class="time-input" id="end-hour" value="22:00" onchange="saveSettings()">
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Aujourd'hui</div>
+    <div class="history-list" id="history-list">
+      <div class="empty-state">Aucun verre enregistré</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────
+let state = {
+  intervalMin: 60,
+  goal: 8,
+  intake: 0,
+  history: [],
+  running: false,
+  startHour: '07:00',
+  endHour: '22:00',
+  nextReminderAt: null,
+  lastDate: new Date().toDateString()
+};
+
+let countdownTimer = null;
+let swReg = null;
+
+// ─── SERVICE WORKER ──────────────────────────────────────────────────
+async function initSW() {
+  const banner = document.getElementById('sw-banner');
+  if (!('serviceWorker' in navigator)) {
+    banner.textContent = '⚠️ Service Worker non supporté — notifications uniquement si l\'app est ouverte';
+    return;
+  }
+  try {
+    swReg = await navigator.serviceWorker.register('/sw.js');
+    banner.textContent = '✅ Rappels actifs même app fermée';
+    banner.classList.add('active');
+
+    // Écoute le SW qui signale qu'un rappel vient de partir
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type === 'FIRED') {
+        // Reprogramme depuis l'onglet si ouvert
+        if (state.running) {
+          scheduleNext(state.intervalMin * 60 * 1000);
+        }
+      }
+    });
+  } catch(err) {
+    banner.textContent = '⚠️ Service Worker non chargé — app doit rester ouverte';
+    console.warn('SW error:', err);
+  }
+}
+
+function sendToSW(delayMs) {
+  if (!swReg?.active) return false;
+  swReg.active.postMessage({
+    type: 'SCHEDULE',
+    delayMs,
+    intake: state.intake,
+    goal: state.goal,
+    intervalMin: state.intervalMin
+  });
+  return true;
+}
+
+function cancelSW() {
+  if (swReg?.active) swReg.active.postMessage({ type: 'CANCEL' });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+function init() {
+  const saved = localStorage.getItem('hydra-state');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    if (parsed.lastDate !== new Date().toDateString()) {
+      parsed.intake = 0;
+      parsed.history = [];
+      parsed.lastDate = new Date().toDateString();
+      parsed.running = false;
+      parsed.nextReminderAt = null;
+    }
+    state = { ...state, ...parsed };
+  }
+  applyState();
+  requestNotifPermission();
+  initSW();
+
+  if (state.running && state.nextReminderAt) {
+    const remaining = state.nextReminderAt - Date.now();
+    scheduleNext(remaining > 0 ? remaining : state.intervalMin * 60 * 1000);
+  }
+}
+
+function applyState() {
+  document.getElementById('start-hour').value = state.startHour;
+  document.getElementById('end-hour').value = state.endHour;
+  document.querySelectorAll('.interval-btn').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.min) === state.intervalMin);
+  });
+  updateGoalDisplay();
+  updateIntakeDisplay();
+  renderHistory();
+}
+
+// ─── NOTIFICATIONS ────────────────────────────────────────────────────
+async function requestNotifPermission() {
+  const badge = document.getElementById('notif-badge');
+  if (!('Notification' in window)) {
+    badge.textContent = 'Non supporté'; badge.className = 'off'; return false;
+  }
+  if (Notification.permission === 'granted') {
+    badge.textContent = 'Notifications ON'; badge.className = 'on'; return true;
+  }
+  if (Notification.permission === 'denied') {
+    badge.textContent = 'Notifications bloquées'; badge.className = 'off'; return false;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    badge.textContent = 'Notifications ON'; badge.className = 'on'; return true;
+  }
+  badge.textContent = 'Notifications OFF'; badge.className = 'off'; return false;
+}
+
+function sendNotification() {
+  if (Notification.permission === 'granted') {
+    const n = new Notification('💧 Hydra — Rappel', {
+      body: `Tu as bu ${state.intake}/${state.goal} verres aujourd'hui. Bois de l'eau !`,
+      tag: 'hydra-reminder',
+      renotify: true
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+  }
+  const card = document.getElementById('countdown-card');
+  card.classList.remove('pulse');
+  void card.offsetWidth;
+  card.classList.add('pulse');
+  showToast('💧 Rappel : bois un verre d\'eau !');
+}
+
+// ─── REMINDERS ───────────────────────────────────────────────────────
+function startReminders() {
+  if (state.running) { showToast('Rappels déjà actifs'); return; }
+  requestNotifPermission().then(() => {
+    state.running = true;
+    scheduleNext(state.intervalMin * 60 * 1000);
+    save();
+    showToast(`▶ Rappels toutes les ${formatInterval()}`);
+  });
+}
+
+function stopReminders() {
+  state.running = false;
+  state.nextReminderAt = null;
+  clearTimeout(window._reminderTimer);
+  clearInterval(countdownTimer);
+  cancelSW();
+  document.getElementById('countdown').textContent = '--:--';
+  document.getElementById('countdown-sub').textContent = 'Rappels arrêtés';
+  document.getElementById('next-time-display').style.display = 'none';
+  save();
+  showToast('■ Rappels arrêtés');
+}
+
+function scheduleNext(ms) {
+  clearTimeout(window._reminderTimer);
+  clearInterval(countdownTimer);
+
+  const fireAt = Date.now() + ms;
+  state.nextReminderAt = fireAt;
+  save();
+
+  // Délègue au Service Worker (arrière-plan)
+  const swOk = sendToSW(ms);
+
+  const d = new Date(fireAt);
+  document.getElementById('next-time').textContent = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('next-time-display').style.display = 'block';
+  document.getElementById('countdown-sub').textContent = swOk
+    ? 'Rappel actif (app peut être fermée)'
+    : 'Prochain rappel dans';
+
+  // Countdown visuel (onglet ouvert)
+  countdownTimer = setInterval(() => {
+    const remaining = state.nextReminderAt - Date.now();
+    if (remaining <= 0) { clearInterval(countdownTimer); return; }
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    document.getElementById('countdown').textContent =
+      `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+  }, 1000);
+
+  // Fallback si SW non dispo (onglet doit rester ouvert)
+  if (!swOk) {
+    window._reminderTimer = setTimeout(() => {
+      clearInterval(countdownTimer);
+      if (isInActiveHours()) sendNotification();
+      if (state.running) scheduleNext(state.intervalMin * 60 * 1000);
+    }, ms);
+  }
+}
+
+function isInActiveHours() {
+  const now = new Date();
+  const [sh, sm] = state.startHour.split(':').map(Number);
+  const [eh, em] = state.endHour.split(':').map(Number);
+  const cur = now.getHours() * 60 + now.getMinutes();
+  return cur >= sh * 60 + sm && cur <= eh * 60 + em;
+}
+
+// ─── WATER LOGGING ───────────────────────────────────────────────────
+function logWater() {
+  state.intake++;
+  state.history.unshift(new Date().toISOString());
+  updateIntakeDisplay();
+  renderHistory();
+  const btn = document.getElementById('log-btn');
+  btn.style.transform = 'scale(0.97)';
+  setTimeout(() => btn.style.transform = '', 150);
+  const left = state.goal - state.intake;
+  showToast(left <= 0 ? `🎉 Objectif atteint ! ${state.intake} verres bu` : `+1 verre — encore ${left} pour l'objectif`);
+  save();
+}
+
+function updateIntakeDisplay() {
+  const pct = Math.min(100, Math.round((state.intake / state.goal) * 100));
+  document.getElementById('drop-percent').textContent = pct + '%';
+  document.getElementById('intake-count').textContent = state.intake;
+  document.getElementById('goal-display').textContent = state.goal;
+  const fillY = 165 - (165 * pct / 100);
+  const rect = document.getElementById('water-rect');
+  const wave = document.getElementById('wave-path');
+  if (rect) rect.setAttribute('y', fillY);
+  if (wave) wave.setAttribute('d',
+    `M-40 ${fillY} Q0 ${fillY-5} 40 ${fillY} Q80 ${fillY+5} 120 ${fillY} Q160 ${fillY-5} 200 ${fillY} L200 330 L-40 330 Z`
+  );
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  if (!state.history.length) { list.innerHTML = '<div class="empty-state">Aucun verre enregistré</div>'; return; }
+  list.innerHTML = state.history.slice(0, 12).map((iso, i) => {
+    const t = new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    return `<div class="history-item"><div class="history-dot"></div><time>${t}</time><span>Verre ${state.intake - i}</span></div>`;
+  }).join('');
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────
+function setInterval_(min) {
+  state.intervalMin = min;
+  document.querySelectorAll('.interval-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.min) === min));
+  if (state.running) { scheduleNext(min * 60 * 1000); showToast('Fréquence : ' + formatInterval()); }
+  save();
+}
+
+function changeGoal(delta) {
+  state.goal = Math.max(1, Math.min(20, state.goal + delta));
+  updateGoalDisplay(); updateIntakeDisplay(); save();
+}
+
+function updateGoalDisplay() {
+  document.getElementById('goal-val').innerHTML = `${state.goal} <span class="goal-unit">${state.goal > 1 ? 'verres' : 'verre'}</span>`;
+}
+
+function saveSettings() {
+  state.startHour = document.getElementById('start-hour').value;
+  state.endHour = document.getElementById('end-hour').value;
+  save(); showToast('Plage horaire sauvegardée');
+}
+
+function formatInterval() {
+  if (state.intervalMin < 60) return state.intervalMin + ' min';
+  const h = Math.floor(state.intervalMin / 60), m = state.intervalMin % 60;
+  return m ? `${h}h${m}` : `${h}h`;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function save() {
+  state.lastDate = new Date().toDateString();
+  localStorage.setItem('hydra-state', JSON.stringify(state));
+}
+
+// ─── START ────────────────────────────────────────────────────────────
+init();
+
+setInterval(() => {
+  if (new Date().toDateString() !== state.lastDate) {
+    state.intake = 0; state.history = []; state.lastDate = new Date().toDateString();
+    updateIntakeDisplay(); renderHistory(); save();
+  }
+}, 60000);
+</script>
+</body>
+</html>
